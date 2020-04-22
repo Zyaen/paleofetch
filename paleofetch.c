@@ -42,6 +42,11 @@ struct sysinfo my_sysinfo;
 int title_length;
 int status;
 
+void remove_newline(char *s) {
+    while (*(++s) != '\n');
+    *s = '\0';
+}
+
 void strip_spaces(char *s) {
     int i = 0;
     int j;
@@ -175,10 +180,8 @@ char *get_host() {
     fread(version, 1, BUF_SIZE, product_version);
     fclose(product_version);
 
-    // trim trailing newline
-    char *s = host;
-    while(*(++s) != '\n') ;
-    *s = '\0';
+    remove_newline(host);
+    remove_newline(version);
 
     strcat(host, " ");
     strcat(host, version);
