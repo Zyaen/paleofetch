@@ -4,7 +4,7 @@ PREFIX=$(HOME)/.local
 all: paleofetch
 
 clean:
-	rm -f fetch
+	rm -f paleofetch
 
 paleofetch: paleofetch.c
 	$(CC) paleofetch.c -o paleofetch $(CFLAGS)
