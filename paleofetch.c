@@ -300,6 +300,7 @@ char *get_gpu() {
         pci_lookup_name(pacc, gpu, BUF_SIZE, PCI_LOOKUP_DEVICE | PCI_LOOKUP_VENDOR, dev->vendor_id, dev->device_id);
         /* as far as I know, this is the only way to check if its a graphics card */
         if(contains_substring(gpu, "Graphics", 8) >= 0) break;
+        if(contains_substring(gpu, "AMD", 3) >= 0) break;
 
         dev = dev->next;
     }
