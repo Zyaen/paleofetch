@@ -325,7 +325,8 @@ char *get_terminal() {
 
 char *get_cpu() {
     char cpu_name[50];
-    int cores;    
+    int cores;
+    double freq;
 
     FILE *cpuinfo = fopen("/proc/cpuinfo", "r"); /* get infomation from cpuinfo */
     
@@ -350,12 +351,32 @@ char *get_cpu() {
 
     fclose(cpuinfo);
 
-    char *cpu = malloc(BUF_SIZE);
+    FILE *cpufreq = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
+
+    if (cpufreq == NULL) {
+        status = -1;
+        halt_and_catch_fire("Unable to open cpufreq");
+    }
+
+    line = NULL;
+
+    if (getline(&line, &len, cpufreq) != -1) {
+        sscanf(line, "%lf", &freq);
+        freq /= 1e6; // convert kHz to GHz
+    } else {
+        freq = 0.0;
+    }
+
+    free(line);
+    fclose(cpufreq);
+
     /* remove unneeded information */
-    snprintf(cpu, BUF_SIZE, "%s (%d)", cpu_name, cores + 1);
-    remove_substring(cpu, "(R)", 3);
-    remove_substring(cpu, "(TM)", 4);
-    truncate_spaces(cpu);
+    remove_substring(cpu_name, "(R)", 3);
+    remove_substring(cpu_name, "(TM)", 4);
+    truncate_spaces(cpu_name);
+
+    char *cpu = malloc(BUF_SIZE);
+    snprintf(cpu, BUF_SIZE, "%s (%d) @ %.3fGHz", cpu_name, cores + 1, freq);
 
     return cpu;
 }
