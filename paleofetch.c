@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <dirent.h>
 
@@ -11,69 +12,53 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
-#define DISTRO "Arch"
+#include "paleofetch.h"
+#include "config.h"
+
 #define BUF_SIZE 150
 
-// I copy pasted this from neofetch, in case you were curious
-#define FORMAT_STR \
-"\e[1;36m                  -`                    \e[0m%s\n"\
-"\e[1;36m                 .o+`                   \e[0m%s\n"\
-"\e[1;36m                `ooo/                   OS: \e[0m%s\n"\
-"\e[1;36m               `+oooo:                  Host: \e[0m%s\n"\
-"\e[1;36m              `+oooooo:                 Kernel: \e[0m%s\n"\
-"\e[1;36m              -+oooooo+:                Uptime: \e[0m%s\n"\
-"\e[1;36m            `/:-:++oooo+:\n"\
-"\e[1;36m           `/++++/+++++++:              Packages: \e[0m%s\n"\
-"\e[1;36m          `/++++++++++++++:             Shell: \e[0m%s\n"\
-"\e[1;36m         `/+++ooooooooooooo/`           Resolution: \e[0m%s\n"\
-"\e[1;36m        ./ooosssso++osssssso+`          Terminal: \e[0m%s\n"\
-"\e[1;36m       .oossssso-````/ossssss+`\n"\
-"\e[1;36m      -osssssso.      :ssssssso.        CPU: \e[0m%s\n"\
-"\e[1;36m     :osssssss/        osssso+++.       GPU: \e[0m%s\n"\
-"\e[1;36m    /ossssssss/        +ssssooo/-       Memory: \e[0m%s\n"\
-"\e[1;36m  `/ossssso+/:-        -:/+osssso+-\n"\
-"\e[1;36m `+sso+:-`                 `.-/+oso:    %s\n"\
-"\e[1;36m`++:.                           `-/+/   %s\n"\
-"\e[1;36m.`                                 `/\e[0m\n\n"
+struct conf {
+    char *label, *(*function)();
+    bool cached;
+} config[] = CONFIG;
 
-// TODO: Finish it
-
+Display *display;
 struct utsname uname_info;
 struct sysinfo my_sysinfo;
 int title_length;
 int status;
-
-void remove_newline(char *s) {
-    while (*s != '\0' && *s != '\n')
-        s++;
-    *s = '\0';    
-}
-
-void strip_spaces(char *s) {
-    int i = 0;
-    int j;
-    
-    while (s[i] != '\0') {
-        if (s[i] == ' ') {
-            if (s[i+1] == ' ') {
-                j = i + 1;
-                do {
-                    s[j] = s[j+1];
-                } while (s[++j] != '\0');
-            } else {
-                ++i;
-            }
-        } else {
-            ++i;
-        }
-    }
-}
 
 void halt_and_catch_fire(const char *message) {
     if(status != 0) {
         printf("%s\n", message);
         exit(status);
     }
+}
+
+/*
+ * Replaces the first newline character with null terminator
+ */
+void remove_newline(char *s) {
+    while (*s != '\0' && *s != '\n')
+        s++;
+    *s = '\0';    
+}
+
+/*
+ * Cleans up repeated spaces in a string
+ */
+void truncate_spaces(char *str) {
+    int src = 0, dst = 0;
+
+    while(*(str + dst) != '\0') {
+        *(str + src) = *(str + dst);
+        if(*(str + (dst++)) == ' ')
+            while(*(str + dst) == ' ') dst++;
+
+        src++;
+    }
+
+    *(str +src) = '\0';
 }
 
 /*
@@ -133,7 +118,7 @@ char *get_title() {
     title_length = strlen(hostname) + strlen(username) + 1;
 
     char *title = malloc(BUF_SIZE);
-    snprintf(title, BUF_SIZE, "\e[1;36m%s\e[0m@\e[1;36m%s", username, hostname);
+    snprintf(title, BUF_SIZE, COLOR"%s\e[0m@"COLOR"%s", username, hostname);
 
     return title;
 }
@@ -244,16 +229,10 @@ char *get_shell() {
 }
 
 char *get_resolution() {
-    Display *display = XOpenDisplay(NULL);
-    if(display == NULL) {
-        status = -1;
-        halt_and_catch_fire("XOpenDisplay failed");
-    }
     int screen = DefaultScreen(display);
 
     int width = DisplayWidth(display, screen);
     int height = DisplayHeight(display, screen);
-    XCloseDisplay(display);
 
     char *resolution = malloc(BUF_SIZE);
     snprintf(resolution, BUF_SIZE, "%dx%d", width, height);
@@ -262,7 +241,6 @@ char *get_resolution() {
 }
 
 char *get_terminal() {
-    Display *display = XOpenDisplay(NULL);
     unsigned char *prop;
     unsigned long _, // not unused, but we don't need the results
                   window = RootWindow(display, XDefaultScreen(display));
@@ -277,7 +255,8 @@ char *get_terminal() {
     window = (prop[3] << 24) + (prop[2] << 16) + (prop[1] << 8) + prop[0];
     free(prop);
     GetProp(class);
-    XCloseDisplay(display);
+
+#undef GetProp
 
     char *terminal = malloc(BUF_SIZE);
     snprintf(terminal, BUF_SIZE, "%s", prop);
@@ -314,18 +293,19 @@ char *get_cpu() {
     fclose(cpuinfo);
 
     char *cpu = malloc(BUF_SIZE);
-    strip_spaces(cpu_name);
     /* remove unneeded information */
-    remove_substring(cpu_name, "(R)", 3);
-    remove_substring(cpu_name, "(TM)", 4);    
     snprintf(cpu, BUF_SIZE, "%s (%d)", cpu_name, cores + 1);
+    remove_substring(cpu, "(R)", 3);
+    remove_substring(cpu, "(TM)", 4);
+    truncate_spaces(cpu);
 
     return cpu;
 }
 
 char *get_gpu() {
     // inspired by https://github.com/pciutils/pciutils/edit/master/example.c
-    char *gpu = malloc(BUF_SIZE);
+    /* it seems that pci_lookup_name needs to be given a buffer, but I can't for the life of my figure out what its for */
+    char buffer[BUF_SIZE], *gpu = malloc(BUF_SIZE);
     struct pci_access *pacc;
     struct pci_dev *dev;
 
@@ -336,15 +316,16 @@ char *get_gpu() {
 
     while(dev != NULL) {
         pci_fill_info(dev, PCI_FILL_IDENT);
-        pci_lookup_name(pacc, gpu, BUF_SIZE, PCI_LOOKUP_DEVICE | PCI_LOOKUP_VENDOR, dev->vendor_id, dev->device_id);
-        /* as far as I know, this is the only way to check if its a graphics card */
-        if(contains_substring(gpu, "Graphics", 8) >= 0) break;
-        if(contains_substring(gpu, "AMD", 3) >= 0) break;
+        if(strcmp("VGA compatible controller", pci_lookup_name(pacc, buffer, sizeof(buffer), PCI_LOOKUP_CLASS, dev->device_class)) == 0) {
+            strncpy(gpu, pci_lookup_name(pacc, buffer, sizeof(buffer), PCI_LOOKUP_DEVICE | PCI_LOOKUP_VENDOR, dev->vendor_id, dev->device_id), BUF_SIZE);
+            break;
+        }
 
         dev = dev->next;
     }
 
-    remove_substring(gpu, "Corporation ", 12);
+    remove_substring(gpu, "Corporation", 11);
+    truncate_spaces(gpu);
 
     pci_cleanup(pacc);
     return gpu;
@@ -416,6 +397,10 @@ char *get_colors2() {
     return colors2;
 }
 
+char *spacer() {
+    return calloc(1, 1); // freeable, null-terminated string of length 1
+}
+
 char *get_cache_file() {
     char *cache_file = malloc(BUF_SIZE);
     char *env = getenv("XDG_CACHE_HOME");
@@ -427,16 +412,55 @@ char *get_cache_file() {
     return cache_file;
 }
 
+/* This isn't especially robust, but as long as we're the only one writing
+ * to our cache file, the format is simple, effective, and fast. One way
+ * we might get in trouble would be if the user decided not to have any
+ * sort of sigil (like ':') after their labels. */
+char *search_cache(char *cache_data, char *label) {
+    char *start = strstr(cache_data, label) + strlen(label);
+    char *end = strchr(start, ';');
+
+    char *buf = calloc(1, BUF_SIZE);
+    // skip past the '=' and stop just before the ';'
+    strncpy(buf, start + 1, end - start - 1);
+
+    return buf;
+}
+
+char *get_value(struct conf c, int read_cache, char *cache_data) {
+    char *value;
+
+    // If the user's config specifies that this value should be cached
+    if(c.cached && read_cache) // and we have a cache to read from
+        value = search_cache(cache_data, c.label); // grab it from the cache
+    else {
+        // Otherwise, call the associated function to get the value
+        value = c.function();
+        if(c.cached) { // and append it to our cache data if appropriate
+            char *buf = malloc(BUF_SIZE);
+            sprintf(buf, "%s=%s;", c.label, value);
+            strcat(cache_data, buf);
+            free(buf);
+        }
+    }
+
+    return value;
+}
+
 int main(int argc, char *argv[]) {
-    char *cache;
+    char *cache, *cache_data = NULL;
     FILE *cache_file;
-    char *title, *bar, *os, *kernel, *host, *uptime, *packages, *shell, *resolution, *terminal, *cpu, *gpu, *memory, *colors1, *colors2;
     int read_cache;
 
     status = uname(&uname_info);
     halt_and_catch_fire("uname failed");
     status = sysinfo(&my_sysinfo);
     halt_and_catch_fire("sysinfo failed");
+    display = XOpenDisplay(NULL);
+    if(display == NULL) {
+        status = -1;
+        halt_and_catch_fire("XOpenDisplay failed");
+    }
 
     cache = get_cache_file();
     if(argc == 2 && strcmp(argv[1], "--recache") == 0)
@@ -446,59 +470,41 @@ int main(int argc, char *argv[]) {
         read_cache = cache_file != NULL;
     }
 
-    if(read_cache) {
-        os = malloc(BUF_SIZE);
-        host = malloc(BUF_SIZE);
-        kernel = malloc(BUF_SIZE);
-        cpu = malloc(BUF_SIZE);
-        gpu = malloc(BUF_SIZE);
-        fscanf(cache_file, "OS: %[^\n] HOST: %[^\n] KERNEL: %[^\n] CPU: %[^\n] GPU: %[^\n]",
-                os, host, kernel, cpu, gpu);
-        fclose(cache_file);
-    }
+    if(!read_cache)
+        cache_data = calloc(4, BUF_SIZE); // should be enough
     else {
-        os = get_os();
-        host = get_host();
-        kernel = get_kernel();
-        cpu = get_cpu();
-        gpu = get_gpu();
+        size_t len; /* unused */
+        getline(&cache_data, &len, cache_file);
+        fclose(cache_file); // We just need the first (and only) line.
     }
 
-    title = get_title();
-    bar = get_bar();
-    uptime = get_uptime();
-    packages = get_packages();
-    shell = get_shell();
-    resolution = get_resolution();
-    terminal = get_terminal();
-    memory = get_memory();
-    colors1 = get_colors1();
-    colors2 = get_colors2();
+#define COUNT(x) (int)(sizeof x / sizeof *x)
 
-    printf(FORMAT_STR, title, bar, os, host, kernel, uptime, packages, shell, resolution, terminal, cpu, gpu, memory, colors1, colors2);
+    for (int i = 0; i < COUNT(LOGO); i++) {
+        // If we've run out of information to show...
+        if(i >= COUNT(config)) // just print the next line of the logo
+            puts(LOGO[i]);
+        else {
+            // Otherwise, we've got a bit of work to do.
+            char *label = config[i].label,
+                 *value = get_value(config[i], read_cache, cache_data);
+            printf(COLOR"%s%s\e[0m%s\n", LOGO[i], label, value);
+            free(value);
 
-    if(!read_cache) {
+        }
+    }
+    puts("\e[0m");
+
+    /* Write out our cache data (if we have any). */
+    if(!read_cache && *cache_data) {
         cache_file = fopen(cache, "w");
-        fprintf(cache_file, "OS: %s\nHOST: %s\nKERNEL: %s\nCPU: %s\nGPU: %s\n",
-                os, host, kernel, cpu, gpu);
+        fprintf(cache_file, "%s", cache_data);
         fclose(cache_file);
     }
-
-    free(title);
-    free(bar);
-    free(os);
-    free(kernel);
-    free(host);
-    free(uptime);
-    free(packages);
-    free(shell);
-    free(resolution);
-    free(terminal);
-    free(cpu);
-    free(gpu);
-    free(memory);
-    free(colors1);
-    free(colors2);
 
     free(cache);
+    free(cache_data);
+    XCloseDisplay(display);
+
+    return 0;
 }
