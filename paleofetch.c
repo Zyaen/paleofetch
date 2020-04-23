@@ -376,7 +376,7 @@ char *get_cpu() {
     /* remove unneeded information */
     remove_substring(cpu_model, "(R)", 3);
     remove_substring(cpu_model, "(TM)", 4);
-    remove_substring(cpu_model, "Core", 4);
+    remove_substring(cpu_model, "Core ", 5); // space avoids removing Core from Core2Duo
     remove_substring(cpu_model, "CPU", 3);
 
     char *cpu = malloc(BUF_SIZE);
