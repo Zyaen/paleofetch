@@ -30,7 +30,7 @@ int status;
 
 void halt_and_catch_fire(const char *message) {
     if(status != 0) {
-        printf("%s\n", message);
+        printf("paleofetch: %s\n", message);
         exit(status);
     }
 }
@@ -132,8 +132,15 @@ char *get_bar() {
 }
 
 char *get_os() {
-    char *os = malloc(BUF_SIZE);
-    snprintf(os, BUF_SIZE, "%s %s %s", DISTRO, uname_info.sysname, uname_info.machine);
+    char *os = malloc(BUF_SIZE),
+         *name = malloc(BUF_SIZE);
+    FILE *os_release = fopen("/etc/os-release", "r");
+
+    fscanf(os_release, "NAME=\"%[^\"]+", name);
+    fclose(os_release);
+    snprintf(os, BUF_SIZE, "%s %s", name, uname_info.machine);
+    free(name);
+
     return os;
 }
 
@@ -178,19 +185,23 @@ char *get_host() {
 
 char *get_uptime() {
     long seconds = my_sysinfo.uptime;
-    long hours = seconds / 3600;
-    long minutes = (seconds / 60) % 60;
-    seconds = seconds % 60;
+    struct { char *name; int secs; } units[] = {
+        { "day",  60 * 60 * 24 },
+        { "hour", 60 * 60 },
+        { "min",  60 },
+    };
 
+    int n, len = 0;
     char *uptime = malloc(BUF_SIZE);
+    for (int i = 0; i < 3; ++i ) {
+        if ((n = seconds / units[i].secs))
+            len += snprintf(uptime + len, BUF_SIZE - len, 
+                            "%d %s%s, ", n, units[i].name, n > 1 ? "s": "");
+        seconds %= units[i].secs;
+    }
 
-    if(hours > 0)
-        snprintf(uptime, BUF_SIZE, "%ld hours, %ld mins", hours, minutes);
-    else if(minutes > 0)
-        snprintf(uptime, BUF_SIZE, "%ld mins", minutes);
-    else
-        snprintf(uptime, BUF_SIZE, "%ld secs", seconds);
-
+    // null-terminate at the trailing comma
+    uptime[len - 2] = '\0';
     return uptime;
 }
 
@@ -324,31 +335,23 @@ char *get_terminal() {
 }
 
 char *get_cpu() {
-    char cpu_name[50];
-    int cores;
-    double freq;
-
-    FILE *cpuinfo = fopen("/proc/cpuinfo", "r"); /* get infomation from cpuinfo */
-    
-    if (cpuinfo == NULL) {
+    FILE *cpuinfo = fopen("/proc/cpuinfo", "r"); /* read from cpu info */
+    if(cpuinfo == NULL) {
         status = -1;
         halt_and_catch_fire("Unable to open cpuinfo");
     }
 
-
-    /* We parse through all lines of cpuinfo and scan for the information we need */
+    char *cpu_model = malloc(BUF_SIZE / 2);
     char *line = NULL;
     size_t len; /* unused */
+    int num_cores = 0;
+    double freq;
 
-    /* parse until EOF */
-    while (getline(&line, &len, cpuinfo) != -1) {
-        /* if sscanf doesn't find a match, pointer is untouched */
-        sscanf(line, "processor : %d", &cores);
-        sscanf(line, "model name : %[^\n]", cpu_name);
+    /* read the model name into cpu_model, and increment num_cores every time model name is found */
+    while(getline(&line, &len, cpuinfo) != -1) {
+        num_cores += sscanf(line, "model name	: %[^@] @", cpu_model);
     }
-
     free(line);
-
     fclose(cpuinfo);
 
     FILE *cpufreq = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
@@ -364,20 +367,23 @@ char *get_cpu() {
         sscanf(line, "%lf", &freq);
         freq /= 1e6; // convert kHz to GHz
     } else {
-        freq = 0.0;
+        freq = 0.0; // cpuinfo_max_freq not available?
     }
 
     free(line);
     fclose(cpufreq);
 
     /* remove unneeded information */
-    remove_substring(cpu_name, "(R)", 3);
-    remove_substring(cpu_name, "(TM)", 4);
-    truncate_spaces(cpu_name);
+    remove_substring(cpu_model, "(R)", 3);
+    remove_substring(cpu_model, "(TM)", 4);
+    remove_substring(cpu_model, "Core", 4);
+    remove_substring(cpu_model, "CPU", 3);
 
     char *cpu = malloc(BUF_SIZE);
-    snprintf(cpu, BUF_SIZE, "%s (%d) @ %.3fGHz", cpu_name, cores + 1, freq);
+    snprintf(cpu, BUF_SIZE, "%s (%d) @ %.1fGHz", cpu_model, num_cores, freq);
+    free(cpu_model);
 
+    truncate_spaces(cpu);
     return cpu;
 }
 
