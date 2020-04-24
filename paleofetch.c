@@ -16,6 +16,7 @@
 #include "config.h"
 
 #define BUF_SIZE 150
+#define REMOVE_CONST_STRING(A, B) remove_substring((A), (B), sizeof(B) - 1)
 
 struct conf {
     char *label, *(*function)();
@@ -341,7 +342,7 @@ char *get_cpu() {
 
     /* read the model name into cpu_model, and increment num_cores every time model name is found */
     while(getline(&line, &len, cpuinfo) != -1) {
-        num_cores += sscanf(line, "model name	: %[^@] @", cpu_model);
+        num_cores += sscanf(line, "model name	: %[^\n@]", cpu_model);
     }
     free(line);
     fclose(cpuinfo);
@@ -366,10 +367,14 @@ char *get_cpu() {
     fclose(cpufreq);
 
     /* remove unneeded information */
-    remove_substring(cpu_model, "(R)", 3);
-    remove_substring(cpu_model, "(TM)", 4);
-    remove_substring(cpu_model, "Core ", 5); // space avoids removing Core from Core2Duo
-    remove_substring(cpu_model, "CPU", 3);
+    REMOVE_CONST_STRING(cpu_model, "(R)");
+    REMOVE_CONST_STRING(cpu_model, "(TM)");
+    REMOVE_CONST_STRING(cpu_model, "Dual-Core");
+    REMOVE_CONST_STRING(cpu_model, "Quad-Core");
+    REMOVE_CONST_STRING(cpu_model, "Six-Core");
+    REMOVE_CONST_STRING(cpu_model, "Eight-Core");
+    REMOVE_CONST_STRING(cpu_model, "Core "); // space avoids removing Core from Core2Duo
+    REMOVE_CONST_STRING(cpu_model, "CPU");
 
     replace_substring(cpu_model, "Core2", "Core 2", 5, 6);
 
@@ -414,7 +419,7 @@ char *find_gpu(int index) {
     if (found == false) *gpu = '\0'; // empty string, so it will not be printed
 
     pci_cleanup(pacc);
-    remove_substring(gpu, "Corporation", 11);
+    REMOVE_CONST_STRING(gpu, "Corporation");
     truncate_spaces(gpu);
     return gpu;
 }
