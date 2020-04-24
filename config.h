@@ -22,7 +22,7 @@
     { "",             get_colors2,    false }, \
 };
 
-#define CPU_REMOVE \
+#define CPU_CONFIG \
 { \
    REMOVE("(R)"), \
    REMOVE("(TM)"), \
@@ -30,11 +30,13 @@
    REMOVE("Quad-Core"), \
    REMOVE("Six-Core"), \
    REMOVE("Eight-Core"), \
-   REMOVE("Core"), \
+   REMOVE("Core "), \
    REMOVE("CPU"), \
+   REPLACE("Core2", "Core 2"), \
 };
 
-#define GPU_REMOVE \
+#define GPU_CONFIG \
 { \
     REMOVE("Corporation"), \
+    REPLACE("Micro", "Macro"), \
 };

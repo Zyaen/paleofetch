@@ -25,11 +25,13 @@ struct conf {
 
 typedef struct {
     char *substring;
+    char *repl_str;
     size_t length;
+    size_t repl_len;
 } STRING_REMOVE;
 
-STRING_REMOVE cpu_remove[] = CPU_REMOVE;
-STRING_REMOVE gpu_remove[] = GPU_REMOVE;
+STRING_REMOVE cpu_config[] = CPU_CONFIG;
+STRING_REMOVE gpu_config[] = GPU_CONFIG;
 
 Display *display;
 struct utsname uname_info;
@@ -379,11 +381,13 @@ char *get_cpu() {
     fclose(cpufreq);
 
     /* remove unneeded information */
-    for (int i = 0; i < COUNT(cpu_remove); ++i) {
-        remove_substring(cpu_model, cpu_remove[i].substring, cpu_remove[i].length);
+    for (int i = 0; i < COUNT(cpu_config); ++i) {
+        if (cpu_config[i].repl_str == NULL) {
+            remove_substring(cpu_model, cpu_config[i].substring, cpu_config[i].length);
+        } else {
+            replace_substring(cpu_model, cpu_config[i].substring, cpu_config[i].repl_str, cpu_config[i].length, cpu_config[i].repl_len);
+        }
     }
-
-    //REPLACE_CONST_STRING(cpu_model, "Core2", "Core 2");
 
     char *cpu = malloc(BUF_SIZE);
     snprintf(cpu, BUF_SIZE, "%s (%d) @ %.1fGHz", cpu_model, num_cores, freq);
@@ -428,8 +432,12 @@ char *find_gpu(int index) {
     pci_cleanup(pacc);
 
     /* remove unneeded information */
-    for (int i = 0; i < COUNT(gpu_remove); ++i) {
-        remove_substring(gpu, gpu_remove[i].substring, gpu_remove[i].length);
+    for (int i = 0; i < COUNT(gpu_config); ++i) {
+        if (gpu_config[i].repl_str == NULL) {
+            remove_substring(gpu, gpu_config[i].substring, gpu_config[i].length);
+        } else {
+            replace_substring(gpu, gpu_config[i].substring, gpu_config[i].repl_str, gpu_config[i].length, gpu_config[i].repl_len);
+        }
     }
 
     truncate_spaces(gpu);
