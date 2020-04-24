@@ -24,20 +24,17 @@
 
 #define CPU_REMOVE \
 { \
-   /* string   length */ \
-   { "(R)",         3 }, \
-   { "(TM)",        4 }, \
-   { "Dual-Core",   9 }, \
-   { "Quad-Core",   9 }, \
-   { "Six-Core",    8 }, \
-   { "Eight-Core", 10 }, \
-   { "Core",        4 }, \
-   { "CPU",         3 }, \
+   REMOVE("(R)"), \
+   REMOVE("(TM)"), \
+   REMOVE("Dual-Core"), \
+   REMOVE("Quad-Core"), \
+   REMOVE("Six-Core"), \
+   REMOVE("Eight-Core"), \
+   REMOVE("Core"), \
+   REMOVE("CPU"), \
 };
 
 #define GPU_REMOVE \
 { \
-   /* string    length */ \
-   { "Corporation", 11 }, \
-   { "Micro",        5 }, \
+    REMOVE("Corporation"), \
 };
