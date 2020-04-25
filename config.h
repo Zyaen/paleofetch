@@ -38,5 +38,5 @@
 #define GPU_CONFIG \
 { \
     REMOVE("Corporation"), \
-    REPLACE("Micro", "Macro"), \
+    REMOVE("Integrated Graphics Controller"), \
 };
