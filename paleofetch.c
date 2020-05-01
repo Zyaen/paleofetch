@@ -189,7 +189,7 @@ static char *get_uptime() {
     char *uptime = malloc(BUF_SIZE);
     for (int i = 0; i < 3; ++i ) {
         if ((n = seconds / units[i].secs) || i == 2) /* always print minutes */
-            len += snprintf(uptime + len, BUF_SIZE - len, 
+            len += snprintf(uptime + len, BUF_SIZE - len,
                             "%d %s%s, ", n, units[i].name, n != 1 ? "s": "");
         seconds %= units[i].secs;
     }
@@ -244,10 +244,10 @@ static char *get_shell() {
 static char *get_resolution() {
     int screen, width, height;
     char *resolution = malloc(BUF_SIZE);
-    
+
     if (display != NULL) {
         screen = DefaultScreen(display);
-    
+
         width = DisplayWidth(display, screen);
         height = DisplayHeight(display, screen);
 
@@ -260,7 +260,7 @@ static char *get_resolution() {
         FILE *modes;
         char *line = NULL;
         size_t len;
-        
+
         /* preload resolution with empty string, in case we cant find a resolution through parsing */
         strncpy(resolution, "", BUF_SIZE);
 
@@ -290,7 +290,7 @@ static char *get_resolution() {
                 }
             }
         }
-        
+
         closedir(dir);
     }
 
@@ -302,10 +302,10 @@ static char *get_terminal() {
     char *terminal = malloc(BUF_SIZE);
 
     /* check if xserver is running or if we are running in a straight tty */
-    if (display != NULL) {   
+    if (display != NULL) {
 
     unsigned long _, // not unused, but we don't need the results
-                  window = RootWindow(display, XDefaultScreen(display));    
+                  window = RootWindow(display, XDefaultScreen(display));
         Atom a,
              active = XInternAtom(display, "_NET_ACTIVE_WINDOW", True),
              class = XInternAtom(display, "WM_CLASS", True);
@@ -370,17 +370,17 @@ cpufreq_fallback:
             status = -1;
             halt_and_catch_fire("Unable to open cpuinfo");
         }
-        
+
         while (getline(&line, &len, cpufreq) != -1) {
             if (sscanf(line, "cpu MHz : %lf", &freq) > 0) break;
         }
-        
+
         cpu_freq = (int) freq;
     }
-    
+
     free(line);
     fclose(cpufreq);
-    
+
     freq = cpu_freq / 1000.0; // convert MHz to GHz and cast to double
     while (cpu_freq % 10 == 0) {
         --prec;
@@ -660,7 +660,7 @@ int main(int argc, char *argv[]) {
 
     free(cache);
     free(cache_data);
-    if(display != NULL) { 
+    if(display != NULL) {
         XCloseDisplay(display);
     }
 
