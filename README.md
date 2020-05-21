@@ -4,6 +4,14 @@ paleofetch
 A rewrite of [neofetch](https://github.com/dylanaraps/neofetch) in C.
 Currently only supports Linux and Xorg.
 
+
+Why use paleofetch over neofetch?
+-----------------------------------------
+One major reason is the performance improvement. For example: neofetch finishes running after about 222 milliseconds where as paleofetch can finish running in a blazing fast 3 milliseconds.
+
+Note: this testing occured on only 1 computer, it's not a good representation on the performance benefit you may gain.
+
+
 Example output:
 
 ![example output](example.png)
@@ -76,6 +84,15 @@ you want to separate.
 The booleans in `CONFIG` tell paleofetch whether you want to cache an entry.
 When cached, paleofetch will save the value and not recompute it whenever you run paleofetch
 (unless you specify the `--recache` option).
+
+The CPU and GPU name can be configured as well. This is done under the CPU_CONFIG and GPU_CONFIG section
+in the config.h file. Two macros are provided to customize and tidy up the model names:
+
+* `REMOVE(string)`: removes the first occurence of `string`
+* `REPLACE(string1, string2)`: replaces the first occurence of `string1` with `string2`
+
+Don't forget to run paleofetch with the --recache flag after compiling it with your new
+configuration, otherwise it will still show the old name for already cached entries.
 
 FAQ
 ---

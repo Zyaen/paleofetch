@@ -58,6 +58,17 @@ void remove_newline(char *s) {
 }
 
 /*
+ * Replaces the first newline character with null terminator
+ * and returns the length of the string
+ */
+int remove_newline_get_length(char *s) {
+    int i;
+    for (i = 0; *s != '\0' && *s != '\n'; s++, i++);
+    *s = '\0';
+    return i;
+}
+
+/*
  * Cleans up repeated spaces in a string
  * Trim spaces at the front of a string
  */
@@ -94,13 +105,17 @@ void remove_substring(char *str, const char* substring, size_t len) {
 /*
  * Replaces the first sub_len characters of sub_str from str
  * with the first repl_len characters of repl_str
- * This can be dangerous if repl_str is bigger than sub_str
- * 
  */
 void replace_substring(char *str, const char *sub_str, const char *repl_str, size_t sub_len, size_t repl_len) {
-    char buffer[BUF_SIZE];
+    char buffer[BUF_SIZE / 2];
     char *start = strstr(str, sub_str);
     if (start == NULL) return; // substring not found
+
+    /* check if we have enough space for new substring */
+    if (strlen(str) - sub_len + repl_len >= BUF_SIZE / 2) {
+        status = -1;
+        halt_and_catch_fire("new substring too long to replace");
+    }
 
     strcpy(buffer, start + sub_len);
     strncpy(start, repl_str, repl_len);
@@ -162,36 +177,36 @@ static char *get_kernel() {
 }
 
 static char *get_host() {
-    FILE *product_name = fopen("/sys/devices/virtual/dmi/id/product_name", "r");
+    char *host = malloc(BUF_SIZE), buffer[BUF_SIZE/2];
+    FILE *product_name, *product_version, *model;
 
-    if(product_name == NULL) {
-        status = -1;
-        halt_and_catch_fire("unable to open product name file");
+    if((product_name = fopen("/sys/devices/virtual/dmi/id/product_name", "r")) != NULL) {
+        if((product_version = fopen("/sys/devices/virtual/dmi/id/product_version", "r")) != NULL) {
+            fread(host, 1, BUF_SIZE/2, product_name);
+            remove_newline(host);
+            strcat(host, " ");
+            fread(buffer, 1, BUF_SIZE/2, product_version);
+            remove_newline(buffer);
+            strcat(host, buffer);
+            fclose(product_version);
+        } else {
+            fclose(product_name);
+            goto model_fallback;
+        }
+        fclose(product_name);
+        return host;
     }
 
-    char *host = malloc(BUF_SIZE);
-    fread(host, 1, BUF_SIZE, product_name);
-    fclose(product_name);
-
-    FILE *product_version = fopen("/sys/devices/virtual/dmi/id/product_version", "r");
-
-    if(product_version == NULL) {
-        status = -1;
-        halt_and_catch_fire("unable to open product version file");
+model_fallback:
+    if((model = fopen("/sys/firmware/devicetree/base/model", "r")) != NULL) {
+        fread(host, 1, BUF_SIZE, model);
+        remove_newline(host);
+        return host;
     }
 
-    char version[BUF_SIZE];
-
-    fread(version, 1, BUF_SIZE, product_version);
-    fclose(product_version);
-
-    remove_newline(host);
-    remove_newline(version);
-
-    strcat(host, " ");
-    strcat(host, version);
-
-    return host;
+    status = -1;
+    halt_and_catch_fire("unable to get host");
+    return NULL;
 }
 
 static char *get_uptime() {
@@ -214,6 +229,37 @@ static char *get_uptime() {
     // null-terminate at the trailing comma
     uptime[len - 2] = '\0';
     return uptime;
+}
+
+// returns "<Battery Percentage>% [<Charging | Discharging | Unknown>]"
+// Credit: allisio - https://gist.github.com/allisio/1e850b93c81150124c2634716fbc4815
+static char *get_battery_percentage() {
+  int battery_capacity;
+  FILE *capacity_file, *status_file;
+  char battery_status[12] = "Unknown";
+
+  if ((capacity_file = fopen(BATTERY_DIRECTORY "/capacity", "r")) == NULL) {
+    status = ENOENT;
+    halt_and_catch_fire("Unable to get battery information");
+  }
+
+  fscanf(capacity_file, "%d", &battery_capacity);
+  fclose(capacity_file);
+
+  if ((status_file = fopen(BATTERY_DIRECTORY "/status", "r")) != NULL) {
+    fscanf(status_file, "%s", battery_status);
+    fclose(status_file);
+  }
+
+  // max length of resulting string is 19
+  // one byte for padding incase there is a newline
+  // 100% [Discharging]
+  // 1234567890123456789
+  char *battery = malloc(20);
+
+  snprintf(battery, 20, "%d%% [%s]", battery_capacity, battery_status);
+
+  return battery;
 }
 
 static char *get_packages(const char* dirname, const char* pacname, int num_extraneous) {
@@ -432,6 +478,9 @@ cpufreq_fallback:
     free(cpu_model);
 
     truncate_spaces(cpu);
+
+    if(num_cores == 0)
+        *cpu = '\0';
     return cpu;
 }
 
