@@ -22,19 +22,25 @@
 	SPACER \
 	{ "Packages: ",   get_packages_pacman,     false , 0}, \
 	{ "Explicit: ",   run_shell_cmd,           true  , "pacman -Qe | wc -l"}, \
+/* Number of running processes */ \
 	{ "Date: ",       get_date,                false , 0}, \
 	{ "Uptime: ",     get_uptime,              false , 0}, \
+/* Local IP address */ \
 	SPACER \
 	{ "CPU: ",        get_cpu,                 true  , 0}, \
+/* GPU don't work */ \
 	{ "GPU: ",        get_gpu,                 true  , 0}, \
-	{ "Memory: ",     get_memory,              false , 0}, \
+	{ "Memory: ",     get_memory,              true  , 0}, \
 	{ "Resolution: ", get_resolution,          false , 0}, \
 	{ "Disk(/): ",    get_disk_usage,          false , "/"}, \
 	{ "Disk(/home): ",get_disk_usage,          false , "/home"}, \
 	SPACER \
-	{ "GTK Theme: ",  get_gtk_option,          true , "gtk-theme-name"}, \
-	{ "GTK Icons: ",  get_gtk_option,          true , "gtk-icon-theme-name"}, \
-	{ "GTK Font: ",   get_gtk_option,          true , "gtk-font-name"}, \
+/* Users */ \
+	{ "GTK Theme: ",  get_gtk_option,          false , "gtk-theme-name"}, \
+	{ "GTK Icons: ",  get_gtk_option,          false , "gtk-icon-theme-name"}, \
+	{ "GTK Font: ",   get_gtk_option,          false , "gtk-font-name"}, \
+	{ "Keys: ",       run_shell_cmd,           true  , "setxkbmap -query | grep layout | cut -b 13- | sed 's/,/ /g'"}, \
+	{ "",             get_bar,                 false , (void*)25}, \
 }
 
 #define CPU_CONFIG \
