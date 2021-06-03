@@ -599,8 +599,13 @@ static char *get_gtk_option(void *arg) {
 			remove_newline(line + i + 1);
 			char *retval = safe_strdup(line + i + 1);
 			free(line);
+			free(conffile);
+			fclose(f);
 			return retval;
 		}
 	}
+	free(line);
+	free(conffile);
+	fclose(f);
 	return safe_calloc(1, 1);
 }
