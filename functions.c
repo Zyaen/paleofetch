@@ -182,14 +182,14 @@ static char *get_packages_pacman(void *arg) { (void)arg; return get_packages("/v
 
 static char *get_shell(void *arg) {
 	(void)arg;
-	char *shell = safe_malloc(BUF_SIZE);
 	char *shell_path = getenv("SHELL");
-	char *shell_name = strrchr(getenv("SHELL"), '/');
+	char *shell_name = strrchr(shell_path, '/');
+	char *shell = safe_malloc(strlen(shell_path) + 1);
 
 	if (shell_name == NULL)                 /* if $SHELL doesn't have a '/' */
-		strncpy(shell, shell_path, BUF_SIZE); /* copy the whole thing over */
+		strcpy(shell, shell_path); /* copy the whole thing over */
 	else
-		strncpy(shell, shell_name + 1, BUF_SIZE); /* o/w copy past the last '/' */
+		strcpy(shell, shell_name + 1); /* o/w copy past the last '/' */
 
 	return shell;
 }
@@ -197,7 +197,8 @@ static char *get_shell(void *arg) {
 static char *get_resolution(void *arg) {
 	(void)arg;
 	int screen, width, height;
-	char *resolution = safe_malloc(BUF_SIZE);
+	char *resolution = safe_malloc(BUF_SIZE + 1);
+	resolution[BUF_SIZE] = 0;
 
 	if (display != NULL) {
 		screen = DefaultScreen(display);
@@ -209,14 +210,14 @@ static char *get_resolution(void *arg) {
 	} else {
 		DIR *dir;
 		struct dirent *entry;
-		char dir_name[] = "/sys/class/drm";
-		char modes_file_name[BUF_SIZE * 2];
 		FILE *modes;
 		char *line = NULL;
 		size_t len;
+		char modes_file_name[BUF_SIZE * 2];
+		char dir_name[] = "/sys/class/drm";
 
 		/* preload resolution with empty string, in case we cant find a resolution through parsing */
-		strncpy(resolution, "", BUF_SIZE);
+		strcpy(resolution, "");
 
 		dir = opendir(dir_name);
 		if (dir == NULL) {
@@ -226,7 +227,7 @@ static char *get_resolution(void *arg) {
 		/* parse through all directories and look for a non empty modes file */
 		while ((entry = readdir(dir)) != NULL) {
 			if (entry->d_type == DT_LNK) {
-				snprintf(modes_file_name, BUF_SIZE * 2, "%s/%s/modes", dir_name, entry->d_name);
+				snprintf(modes_file_name, BUF_SIZE * 2 + 9, "%s/%s/modes", dir_name, entry->d_name);
 
 				modes = fopen(modes_file_name, "r");
 				if (modes != NULL) {
@@ -254,7 +255,8 @@ static char *get_resolution(void *arg) {
 static char *get_terminal(void *arg) {
 	(void)arg;
 	unsigned char *prop;
-	char *terminal = safe_malloc(BUF_SIZE);
+	char *terminal = safe_malloc(BUF_SIZE+1);
+	terminal[BUF_SIZE] = 0;
 
 	/* check if xserver is running or if we are running in a straight tty */
 	if (display != NULL) {
@@ -380,7 +382,9 @@ static char *get_cpu(void *arg) {
 static char *get_gpu(void *arg) {
 	// inspired by https://github.com/pciutils/pciutils/edit/master/example.c
 	/* it seems that pci_lookup_name needs to be given a buffer, but I can't for the life of my figure out what its for */
-	char buffer[BUF_SIZE], *device_class, *gpu = safe_malloc(BUF_SIZE);
+	char buffer[BUF_SIZE];
+	char *device_class, *gpu = safe_malloc(BUF_SIZE + 1);
+	gpu[BUF_SIZE] = 0;
 	struct pci_access *pacc;
 	struct pci_dev *dev;
 	intptr_t index = (intptr_t)arg;
@@ -396,8 +400,8 @@ static char *get_gpu(void *arg) {
 		pci_fill_info(dev, PCI_FILL_IDENT);
 		device_class = pci_lookup_name(pacc, buffer, sizeof(buffer), PCI_LOOKUP_CLASS, dev->device_class);
 		if (strcmp("VGA compatible controller", device_class) == 0 || strcmp("3D controller", device_class) == 0) {
-			strncpy(gpu, pci_lookup_name(pacc, buffer, sizeof(buffer), PCI_LOOKUP_DEVICE | PCI_LOOKUP_VENDOR, dev->vendor_id, dev->device_id), BUF_SIZE);
 			if (gpu_index == index) {
+				strncpy(gpu, pci_lookup_name(pacc, buffer, sizeof(buffer), PCI_LOOKUP_DEVICE | PCI_LOOKUP_VENDOR, dev->vendor_id, dev->device_id), BUF_SIZE);
 				found = true;
 				break;
 			} else {
