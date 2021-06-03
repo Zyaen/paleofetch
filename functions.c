@@ -18,7 +18,7 @@ static char *get_title(void *arg) {
 }
 
 static char *get_bar(void *arg) {
-	intptr_t bar_length = arg;
+	intptr_t bar_length = (intptr_t) arg;
 	if (!bar_length)
 		bar_length = title_length;
 	char *bar = malloc(BUF_SIZE);
@@ -30,6 +30,7 @@ static char *get_bar(void *arg) {
 }
 
 static char *get_os(void *arg) {
+	(void)arg;
 	char *os = malloc(BUF_SIZE), *name = malloc(BUF_SIZE), *line = NULL;
 	size_t len;
 	FILE *os_release = fopen("/etc/os-release", "r");
@@ -52,12 +53,14 @@ static char *get_os(void *arg) {
 }
 
 static char *get_kernel(void *arg) {
+	(void)arg;
 	char *kernel = malloc(BUF_SIZE);
 	strncpy(kernel, uname_info.release, BUF_SIZE);
 	return kernel;
 }
 
 static char *get_host(void *arg) {
+	(void)arg;
 	char *host = malloc(BUF_SIZE), buffer[BUF_SIZE / 2];
 	FILE *product_name, *product_version, *model;
 
@@ -93,6 +96,7 @@ model_fallback:
 }
 
 static char *get_uptime(void *arg) {
+	(void)arg;
 	long seconds = my_sysinfo.uptime;
 	struct {
 		char *name;
@@ -119,6 +123,7 @@ static char *get_uptime(void *arg) {
 // returns "<Battery Percentage>% [<Charging | Discharging | Unknown>]"
 // Credit: allisio - https://gist.github.com/allisio/1e850b93c81150124c2634716fbc4815
 static char *get_battery_percentage(void *arg) {
+	(void)arg;
 	int battery_capacity;
 	FILE *capacity_file, *status_file;
 	char battery_status[12] = "Unknown";
@@ -173,9 +178,10 @@ static char *get_packages(const char *dirname, const char *pacname, int num_extr
 	return packages;
 }
 
-static char *get_packages_pacman(void *arg) { return get_packages("/var/lib/pacman/local", "pacman", 0); }
+static char *get_packages_pacman(void *arg) { (void)arg; return get_packages("/var/lib/pacman/local", "pacman", 0); }
 
 static char *get_shell(void *arg) {
+	(void)arg;
 	char *shell = malloc(BUF_SIZE);
 	char *shell_path = getenv("SHELL");
 	char *shell_name = strrchr(getenv("SHELL"), '/');
@@ -189,6 +195,7 @@ static char *get_shell(void *arg) {
 }
 
 static char *get_resolution(void *arg) {
+	(void)arg;
 	int screen, width, height;
 	char *resolution = malloc(BUF_SIZE);
 
@@ -245,6 +252,7 @@ static char *get_resolution(void *arg) {
 }
 
 static char *get_terminal(void *arg) {
+	(void)arg;
 	unsigned char *prop;
 	char *terminal = malloc(BUF_SIZE);
 
@@ -281,6 +289,7 @@ static char *get_terminal(void *arg) {
 }
 
 static char *get_cpu(void *arg) {
+	(void)arg;
 	FILE *cpuinfo = fopen("/proc/cpuinfo", "r"); /* read from cpu info */
 	if (cpuinfo == NULL) {
 		status = -1;
@@ -368,13 +377,14 @@ static char *get_cpu(void *arg) {
 	return cpu;
 }
 
-static char *find_gpu(int index) {
+static char *get_gpu(void *arg) {
 	// inspired by https://github.com/pciutils/pciutils/edit/master/example.c
 	/* it seems that pci_lookup_name needs to be given a buffer, but I can't for the life of my figure out what its for */
 	char buffer[BUF_SIZE], *device_class, *gpu = malloc(BUF_SIZE);
 	struct pci_access *pacc;
 	struct pci_dev *dev;
-	int gpu_index = 0;
+	intptr_t index = (intptr_t)arg;
+	intptr_t gpu_index = 0;
 	bool found = false;
 
 	pacc = pci_alloc();
@@ -417,11 +427,8 @@ static char *find_gpu(int index) {
 	return gpu;
 }
 
-static char *get_gpu1(void *arg) { return find_gpu(0); }
-
-static char *get_gpu2(void *arg) { return find_gpu(1); }
-
 static char *get_memory(void *arg) {
+	(void) arg;
 	int total_memory, used_memory;
 	int total, shared, memfree, buffers, cached, reclaimable;
 
@@ -461,7 +468,8 @@ static char *get_memory(void *arg) {
 	return memory;
 }
 
-static char *get_disk_usage(const char *folder) {
+static char *get_disk_usage(void *arg) {
+	char *folder = arg;
 	char *disk_usage = malloc(BUF_SIZE);
 	long total, used, free;
 	int percentage;
@@ -477,11 +485,8 @@ static char *get_disk_usage(const char *folder) {
 	return disk_usage;
 }
 
-static char *get_disk_usage_root(void *arg) { return get_disk_usage("/"); }
-
-static char *get_disk_usage_home(void *arg) { return get_disk_usage("/home"); }
-
 static char *get_colors1(void *arg) {
+	(void) arg;
 	char *colors1 = malloc(BUF_SIZE);
 	char *s = colors1;
 
@@ -495,6 +500,7 @@ static char *get_colors1(void *arg) {
 }
 
 static char *get_colors2(void *arg) {
+	(void) arg;
 	char *colors2 = malloc(BUF_SIZE);
 	char *s = colors2;
 
@@ -508,5 +514,6 @@ static char *get_colors2(void *arg) {
 }
 
 static char *spacer(void *arg) {
+	(void) arg;
 	return calloc(1, 1); // freeable, null-terminated string of length 1
 }

@@ -13,11 +13,9 @@ static char *get_title(void*),
             *get_resolution(void*),
             *get_terminal(void*),
             *get_cpu(void*),
-            *get_gpu1(void*),
-            *get_gpu2(void*),
+            *get_gpu(void*),     // The argument is the GPU number to select. Original paleofetch had getgpu1(), getgpu2(). These would now be get_gpu(0), get_gpu(1), ...
             *get_memory(void*),
-            *get_disk_usage_root(void*),
-            *get_disk_usage_home(void*),
+            *get_disk_usage(void*), //The argument is the path under which to search, for example "/" or "/home"
             *get_colors1(void*),
             *get_colors2(void*),
             *spacer(void*);

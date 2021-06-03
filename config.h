@@ -13,16 +13,18 @@
 	{ "Kernel: ",     get_kernel,              true  , 0}, \
 	{ "Uptime: ",     get_uptime,              false , 0}, \
 /*	{ "Battery: ",    get_battery_percentage,  false , 0}, */\
-	{ "",             get_bar,                 false , 23}, \
+	SPACER \
 	{ "Packages: ",   get_packages_pacman,     false , 0}, \
 	{ "Shell: ",      get_shell,               false , 0}, \
-	{ "Resolution: ", get_resolution,          false , 0}, \
 	{ "Terminal: ",   get_terminal,            false , 0}, \
-	{ "",             get_bar,                 false , 21}, \
+	SPACER \
 	{ "CPU: ",        get_cpu,                 true  , 0}, \
-	{ "GPU: ",        get_gpu1,                true  , 0}, \
+	{ "GPU: ",        get_gpu,                 true  , 0}, \
 	{ "Memory: ",     get_memory,              false , 0}, \
-	{ "",             get_bar,                 false , 26}, \
+	{ "Resolution: ", get_resolution,          false , 0}, \
+	{ "Disk(/): ",    get_disk_usage,          false , "/"}, \
+	{ "Disk(/home): ",get_disk_usage,         false , "/home"}, \
+	SPACER \
 	{ "",             get_colors1,             false , 0}, \
 	{ "",             get_colors2,             false , 0}, \
 }
@@ -42,6 +44,7 @@
 #define GPU_CONFIG \
 { \
 	REMOVE("Corporation"), \
+	REMOVE("Integrated Graphics Controller"), \
 }
 
 /* GOAL:
