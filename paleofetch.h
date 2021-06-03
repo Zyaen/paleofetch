@@ -22,6 +22,6 @@ static char *get_title(),
             *get_colors2(),
             *spacer();
 
-#define SPACER {"", spacer, false},
+#define SPACER {"", spacer, false, 0},
 #define REMOVE(A) { (A), NULL, sizeof(A) - 1 , 0 }
 #define REPLACE(A, B) { (A), (B), sizeof(A) - 1, sizeof(B) - 1 }

@@ -1,43 +1,81 @@
-#include "logos/arch.h"
+#include "logos/arch_big.h"
 #define COLOR "\e[1;36m"
 
 #define CONFIG \
 { \
-   /* name            function                 cached */\
-    { "",             get_title,               false }, \
-    { "",             get_bar,                 false }, \
-    { "OS: ",         get_os,                  true  }, \
-    { "Host: ",       get_host,                true  }, \
-    { "Kernel: ",     get_kernel,              true  }, \
-    { "Uptime: ",     get_uptime,              false }, \
-    { "Battery: ",    get_battery_percentage,  false }, \
-    SPACER \
-    { "Packages: ",   get_packages_pacman,   false }, \
-    { "Shell: ",      get_shell,             false }, \
-    { "Resolution: ", get_resolution,        false }, \
-    { "Terminal: ",   get_terminal,          false }, \
-    SPACER \
-    { "CPU: ",        get_cpu,                 true  }, \
-    { "GPU: ",        get_gpu1,                true  }, \
-    { "Memory: ",     get_memory,              false }, \
-    SPACER \
-    { "",             get_colors1,             false }, \
-    { "",             get_colors2,             false }, \
+	/* name	          function                 cached */\
+	{ "",             get_title,               false , 0}, \
+	{ "",             get_bar,                 false , 0}, \
+	{ "OS: ",         get_os,                  true  , 0}, \
+/*	{ "Host: ",       get_host,                true  , 0}, */\
+	{ "Kernel: ",     get_kernel,              true  , 0}, \
+	{ "Uptime: ",     get_uptime,              false , 0}, \
+/*	{ "Battery: ",    get_battery_percentage,  false , 0}, */\
+	{ "",             get_bar,                 false , 0}, \
+	{ "Packages: ",   get_packages_pacman,     false , 0}, \
+	{ "Shell: ",      get_shell,               false , 0}, \
+	{ "Resolution: ", get_resolution,          false , 0}, \
+	{ "Terminal: ",   get_terminal,            false , 0}, \
+	{ "",             get_bar,                 false , 0}, \
+	{ "CPU: ",        get_cpu,                 true  , 0}, \
+	{ "GPU: ",        get_gpu1,                true  , 0}, \
+	{ "Memory: ",     get_memory,              false , 0}, \
+	{ "",             get_bar,                 false , 0}, \
+	{ "",             get_colors1,             false , 0}, \
+	{ "",             get_colors2,             false , 0}, \
 }
 
 #define CPU_CONFIG \
 { \
-   REMOVE("(R)"), \
-   REMOVE("(TM)"), \
-   REMOVE("Dual-Core"), \
-   REMOVE("Quad-Core"), \
-   REMOVE("Six-Core"), \
-   REMOVE("Eight-Core"), \
-   REMOVE("Core"), \
-   REMOVE("CPU"), \
+	REMOVE("(R)"), \
+	REMOVE("(TM)"), \
+	REMOVE("Dual-Core"), \
+	REMOVE("Quad-Core"), \
+	REMOVE("Six-Core"), \
+	REMOVE("Eight-Core"), \
+	REMOVE("Core"), \
+	REMOVE("CPU"), \
 }
 
 #define GPU_CONFIG \
 { \
-    REMOVE("Corporation"), \
+	REMOVE("Corporation"), \
 }
+
+/* GOAL:
+print_info() {
+	info title
+	info underline
+	info cols
+
+	info "OS" distro
+	info "Kernel" kernel
+	info "WM" wm
+	info "Terminal" term
+	info "Shell" shell
+	info underline
+
+	info "Users" users
+	info "Local IP" local_ip
+	info "Uptime" uptime
+	prin "Date" "$(date)"
+	info "Packages" packages
+	prin "Explicit" "$(pacman -Qe | wc -l)"
+	info underline
+
+	info "CPU" cpu
+	info "CPU Usage" cpu_usage
+	info "GPU" gpu
+	info "Monitors" resolution
+	info "Memory" memory
+	info "Disk" disk
+	info underline
+
+	info "Theme" theme
+	info "Icons" icons
+#	info "Terminal Font" term_font
+	info "Font" font
+	prin "Keys" "$(setxkbmap -query | grep layout | cut -b 13- | sed 's/,/ /g')"
+	info underline
+}
+*/
