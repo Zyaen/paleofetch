@@ -80,11 +80,11 @@ char *search_cache(char *cache_data, char *label) {
 	}
 	start += strlen(label);
 	char *end = strchr(start, CACHE_SEPERATOR);
-	char *buf = calloc(1, BUF_SIZE);
+	char *cached_val = safe_calloc(1, end - start);
 	// skip past the '=' and stop just before the ';'
-	strncpy(buf, start + 1, end - start - 1);
+	strncpy(cached_val, start + 1, end - start - 1);
 
-	return buf;
+	return cached_val;
 }
 
 char *get_value(struct conf c, int read_cache, char *cache_data, FILE *cache_file) {

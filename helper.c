@@ -90,3 +90,9 @@ void *safe_malloc(size_t bytes) {
 		halt_and_catch_fire("Failed to allocate %lu bytes", (unsigned long) bytes);
 	return retval;
 }
+void *safe_calloc(size_t memb_size, size_t bytes) {
+	void *retval = calloc(memb_size, bytes);
+	if (!retval)
+		halt_and_catch_fire("Failed to allocate %lu %lu-byte words", (unsigned long) bytes, (unsigned long) memb_size);
+	return retval;
+}
