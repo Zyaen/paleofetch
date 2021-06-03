@@ -524,6 +524,30 @@ static char *spacer(void *arg) {
 
 static char *run_shell_cmd(void *arg) {
 	char *cmd = arg;
-	char *retval = strdup(cmd);
-	return retval;
+	size_t output_len = 256;
+	char *output = safe_malloc(output_len + 1);
+	int pipefds[2];
+	safe_pipe(pipefds);
+	int pid = fork();
+	if (pid < 0)
+		halt_and_catch_fire("Unable to fork to run command '%s'", cmd);
+	if (pid == 0) {
+		close(pipefds[0]); //close read end of pipe
+		dup2(pipefds[1], STDOUT_FILENO);  //Output goes through the pipe
+		int err = execl("/bin/sh", "/bin/sh", "-c", cmd, (char*) 0);
+		(void)err;
+		halt_and_catch_fire("Unable to run command '%s' with '/bin/sh -c'", cmd);
+	}
+	close(pipefds[1]); //close write end of pipe
+	size_t i;
+	for (i = 0; i < output_len;) {
+		int new_bytes = read(pipefds[0], output + i, output_len - i);
+		if (!new_bytes) //we reached the end of output from the shell
+			break;
+		i += new_bytes;
+	}
+	output[i] = 0;
+	remove_newline(output);
+
+	return output;
 }

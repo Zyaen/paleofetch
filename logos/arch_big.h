@@ -1,5 +1,6 @@
 // Made by Magnus Anderson for a bigger neofetch
 char *LOGO[] = {
+	"                       ;,                             ",
 	"                       %i                             ",
 	"                      =vI=                            ",
 	"                     .IIII.                           ",
