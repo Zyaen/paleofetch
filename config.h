@@ -1,6 +1,8 @@
 #include "logos/arch_big.h"
 #define COLOR "\e[1;36m"
 
+#define TEMP_CACHE_FILE 1
+
 #define CONFIG \
 { \
 	/* name	          function                 cached */\
@@ -11,16 +13,16 @@
 	{ "Kernel: ",     get_kernel,              true  , 0}, \
 	{ "Uptime: ",     get_uptime,              false , 0}, \
 /*	{ "Battery: ",    get_battery_percentage,  false , 0}, */\
-	{ "",             get_bar,                 false , 0}, \
+	{ "",             get_bar,                 false , 23}, \
 	{ "Packages: ",   get_packages_pacman,     false , 0}, \
 	{ "Shell: ",      get_shell,               false , 0}, \
 	{ "Resolution: ", get_resolution,          false , 0}, \
 	{ "Terminal: ",   get_terminal,            false , 0}, \
-	{ "",             get_bar,                 false , 0}, \
+	{ "",             get_bar,                 false , 21}, \
 	{ "CPU: ",        get_cpu,                 true  , 0}, \
 	{ "GPU: ",        get_gpu1,                true  , 0}, \
 	{ "Memory: ",     get_memory,              false , 0}, \
-	{ "",             get_bar,                 false , 0}, \
+	{ "",             get_bar,                 false , 26}, \
 	{ "",             get_colors1,             false , 0}, \
 	{ "",             get_colors2,             false , 0}, \
 }
