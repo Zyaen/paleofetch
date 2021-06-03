@@ -21,7 +21,10 @@ static char
 	*get_colors2(void*),
 	*spacer(void*),
 	
-	*run_shell_cmd(void*);  //The argument is a POSIX shell-compliant line of code to be executed
+	*run_shell_cmd(void*),  //The argument is a POSIX shell-compliant line of code to be executed
+	*get_date(void*),
+	*get_gtk_option(void*), //The argument is the gtk option you want to get, such as 'gtk-theme-name'
+	*get_env(void*);       //The argument is the name of the environment variable to get
 
 #define SPACER {"", spacer, false, 0},
 #define REMOVE(A) { (A), NULL, sizeof(A) - 1 , 0 }

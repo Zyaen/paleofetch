@@ -3,9 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <string.h>
 #include <dirent.h>
 #include <errno.h>
+#include <time.h>
 
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
@@ -54,17 +56,13 @@ int title_length, status;
 #include "functions.c"
 
 char *get_cache_file_name() {
-	char *cache_file = safe_malloc(BUF_SIZE);
 #ifdef TEMP_CACHE_FILE
-	strcpy(cache_file, "/tmp/paleofetch-cache-file");
-	return cache_file;
+	return safe_strdup("/tmp/paleofetch-cache-file");
 #endif
 	char *env = getenv("XDG_CACHE_HOME");
-	if (env == NULL)
-		snprintf(cache_file, BUF_SIZE, "%s/.cache/paleofetch", getenv("HOME"));
-	else
-		snprintf(cache_file, BUF_SIZE, "%s/paleofetch", env);
-	return cache_file;
+	if (env)
+		return sallocf("%s/paleofetch", env);
+	return sallocf("%s/.cache/paleofetch", getenv("HOME"));
 }
 
 /* This isn't especially robust, but as long as we're the only one writing

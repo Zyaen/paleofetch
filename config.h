@@ -8,6 +8,7 @@
 	/* name	          function                 cached */\
 	{ "",             get_title,               false , 0}, \
 	{ "",             get_bar,                 false , 0}, \
+	SPACER \
 	{ "",             get_colors1,             false , 0}, \
 	{ "",             get_colors2,             false , 0}, \
 	SPACER \
@@ -20,6 +21,8 @@
 /*	{ "Battery: ",    get_battery_percentage,  false , 0}, */\
 	SPACER \
 	{ "Packages: ",   get_packages_pacman,     false , 0}, \
+	{ "Explicit: ",   run_shell_cmd,           true  , "pacman -Qe | wc -l"}, \
+	{ "Date: ",       get_date,                false , 0}, \
 	{ "Uptime: ",     get_uptime,              false , 0}, \
 	SPACER \
 	{ "CPU: ",        get_cpu,                 true  , 0}, \
@@ -27,7 +30,11 @@
 	{ "Memory: ",     get_memory,              false , 0}, \
 	{ "Resolution: ", get_resolution,          false , 0}, \
 	{ "Disk(/): ",    get_disk_usage,          false , "/"}, \
-	{ "Disk(/home): ",get_disk_usage,         false , "/home"}, \
+	{ "Disk(/home): ",get_disk_usage,          false , "/home"}, \
+	SPACER \
+	{ "GTK Theme: ",  get_gtk_option,          true , "gtk-theme-name"}, \
+	{ "GTK Icons: ",  get_gtk_option,          true , "gtk-icon-theme-name"}, \
+	{ "GTK Font: ",   get_gtk_option,          true , "gtk-font-name"}, \
 }
 
 #define CPU_CONFIG \
@@ -54,18 +61,18 @@ print_info() {
 	info underline
 	info cols
 
-	info "OS" distro
-	info "Kernel" kernel
-	info "WM" wm
-	info "Terminal" term
-	info "Shell" shell
+G	info "OS" distro
+G	info "Kernel" kernel
+G	info "WM" wm
+G	info "Terminal" term
+G	info "Shell" shell
 	info underline
 
 	info "Users" users
 	info "Local IP" local_ip
-	info "Uptime" uptime
-	prin "Date" "$(date)"
-	info "Packages" packages
+G	info "Uptime" uptime
+G	prin "Date" "$(date)"
+G	info "Packages" packages
 	prin "Explicit" "$(pacman -Qe | wc -l)"
 	info underline
 

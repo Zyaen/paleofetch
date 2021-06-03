@@ -96,3 +96,22 @@ void *safe_calloc(size_t memb_size, size_t bytes) {
 		halt_and_catch_fire("Failed to allocate %lu %lu-byte words", (unsigned long) bytes, (unsigned long) memb_size);
 	return retval;
 }
+char *safe_strdup(char *s) {
+	char *retval = malloc(strlen(s) + 1);
+	if (!retval)
+		halt_and_catch_fire("Failed to allocate space for a string");
+	strcpy(retval, s);
+	return retval;
+}
+
+char *sallocf(const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	size_t bytes = vsnprintf(0, 0, fmt, args);
+	va_end(args);
+	char *retval = safe_malloc(bytes + 1);
+	va_start(args, fmt);
+	vsprintf(retval, fmt, args);
+	va_end(args);
+	return retval;
+}

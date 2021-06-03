@@ -519,7 +519,7 @@ static char *get_colors2(void *arg) {
 
 static char *spacer(void *arg) {
 	(void) arg;
-	return calloc(1, 1); // freeable, null-terminated string of length 1
+	return safe_calloc(1, 1); // freeable, null-terminated string of length 1
 }
 
 static char *run_shell_cmd(void *arg) {
@@ -550,4 +550,57 @@ static char *run_shell_cmd(void *arg) {
 	remove_newline(output);
 
 	return output;
+}
+
+static char *get_date(void *arg) {
+	(void) arg;
+	time_t t = time(0);
+	struct tm *tm = localtime(&t);
+	char *retval = safe_malloc(72);
+	sprintf(retval, "%d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+	return retval;
+}
+
+static char *get_env(void *arg) {
+	char *env = arg;
+	env = getenv(env);
+	if (!env)
+		return safe_calloc(1, 1);
+	char *retval = malloc(strlen(env) + 1);
+	strcpy(env, retval);
+	remove_newline(retval);
+	return retval;
+}
+
+char *gtk_settings_file_name() {
+	char *config_dir = getenv("XDG_CONFIG_HOME");
+	if (config_dir) {
+		return sallocf("%s/gtk-3.0/settings.ini", config_dir);
+	}
+	return sallocf("%s/.config/gtk-3.0/settings.ini", getenv("HOME"));
+}
+
+static char *get_gtk_option(void *arg) {
+	char *optname = arg;
+	char *conffile = gtk_settings_file_name();
+	FILE *f = fopen(conffile, "r");
+	char *line = 0;
+	size_t max = 0;
+	while (!feof(f)) {
+		getline(&line, &max, f);
+		size_t i;
+		for (i = 0; optname[i]; i++) {
+			if (!line[i])
+				break;
+			if (line[i] != optname[i])
+				break;
+		}
+		if (!optname[i] && line[i] == '=') {
+			remove_newline(line + i + 1);
+			char *retval = safe_strdup(line + i + 1);
+			free(line);
+			return retval;
+		}
+	}
+	return safe_calloc(1, 1);
 }
