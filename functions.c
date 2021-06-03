@@ -11,7 +11,7 @@ static char *get_title(void *arg) {
 
 	title_length = strlen(hostname) + strlen(username) + 1;
 
-	char *title = malloc(BUF_SIZE);
+	char *title = safe_malloc(BUF_SIZE);
 	snprintf(title, BUF_SIZE, COLOR "%s\e[0m@" COLOR "%s", username, hostname);
 
 	return title;
@@ -21,7 +21,7 @@ static char *get_bar(void *arg) {
 	intptr_t bar_length = (intptr_t) arg;
 	if (!bar_length)
 		bar_length = title_length;
-	char *bar = malloc(BUF_SIZE);
+	char *bar = safe_malloc(BUF_SIZE);
 	char *s = bar;
 	for (intptr_t i = 0; i < bar_length; i++)
 		*(s++) = '-';
@@ -31,7 +31,7 @@ static char *get_bar(void *arg) {
 
 static char *get_os(void *arg) {
 	(void)arg;
-	char *os = malloc(BUF_SIZE), *name = malloc(BUF_SIZE), *line = NULL;
+	char *os = safe_malloc(BUF_SIZE), *name = safe_malloc(BUF_SIZE), *line = NULL;
 	size_t len;
 	FILE *os_release = fopen("/etc/os-release", "r");
 	if (os_release == NULL) {
@@ -54,14 +54,14 @@ static char *get_os(void *arg) {
 
 static char *get_kernel(void *arg) {
 	(void)arg;
-	char *kernel = malloc(BUF_SIZE);
+	char *kernel = safe_malloc(BUF_SIZE);
 	strncpy(kernel, uname_info.release, BUF_SIZE);
 	return kernel;
 }
 
 static char *get_host(void *arg) {
 	(void)arg;
-	char *host = malloc(BUF_SIZE), buffer[BUF_SIZE / 2];
+	char *host = safe_malloc(BUF_SIZE), buffer[BUF_SIZE / 2];
 	FILE *product_name, *product_version, *model;
 
 	if ((product_name = fopen("/sys/devices/virtual/dmi/id/product_name", "r")) != NULL) {
@@ -108,7 +108,7 @@ static char *get_uptime(void *arg) {
 	};
 
 	int n, len = 0;
-	char *uptime = malloc(BUF_SIZE);
+	char *uptime = safe_malloc(BUF_SIZE);
 	for (int i = 0; i < 3; ++i) {
 		if ((n = seconds / units[i].secs) || i == 2) /* always print minutes */
 			len += snprintf(uptime + len, BUF_SIZE - len, "%d %s%s, ", n, units[i].name, n != 1 ? "s" : "");
@@ -145,7 +145,7 @@ static char *get_battery_percentage(void *arg) {
 	// one byte for padding incase there is a newline
 	// 100% [Discharging]
 	// 1234567890123456789
-	char *battery = malloc(20);
+	char *battery = safe_malloc(20);
 
 	snprintf(battery, 20, "%d%% [%s]", battery_capacity, battery_status);
 
@@ -172,7 +172,7 @@ static char *get_packages(const char *dirname, const char *pacname, int num_extr
 
 	status = closedir(dirp);
 
-	char *packages = malloc(BUF_SIZE);
+	char *packages = safe_malloc(BUF_SIZE);
 	snprintf(packages, BUF_SIZE, "%d (%s)", num_packages, pacname);
 
 	return packages;
@@ -182,7 +182,7 @@ static char *get_packages_pacman(void *arg) { (void)arg; return get_packages("/v
 
 static char *get_shell(void *arg) {
 	(void)arg;
-	char *shell = malloc(BUF_SIZE);
+	char *shell = safe_malloc(BUF_SIZE);
 	char *shell_path = getenv("SHELL");
 	char *shell_name = strrchr(getenv("SHELL"), '/');
 
@@ -197,7 +197,7 @@ static char *get_shell(void *arg) {
 static char *get_resolution(void *arg) {
 	(void)arg;
 	int screen, width, height;
-	char *resolution = malloc(BUF_SIZE);
+	char *resolution = safe_malloc(BUF_SIZE);
 
 	if (display != NULL) {
 		screen = DefaultScreen(display);
@@ -254,7 +254,7 @@ static char *get_resolution(void *arg) {
 static char *get_terminal(void *arg) {
 	(void)arg;
 	unsigned char *prop;
-	char *terminal = malloc(BUF_SIZE);
+	char *terminal = safe_malloc(BUF_SIZE);
 
 	/* check if xserver is running or if we are running in a straight tty */
 	if (display != NULL) {
@@ -296,7 +296,7 @@ static char *get_cpu(void *arg) {
 		halt_and_catch_fire("Unable to open cpuinfo");
 	}
 
-	char *cpu_model = malloc(BUF_SIZE / 2);
+	char *cpu_model = safe_malloc(BUF_SIZE / 2);
 	char *line = NULL;
 	size_t len; /* unused */
 	int num_cores = 0, cpu_freq, prec = 3;
@@ -366,7 +366,7 @@ static char *get_cpu(void *arg) {
 		}
 	}
 
-	char *cpu = malloc(BUF_SIZE);
+	char *cpu = safe_malloc(BUF_SIZE);
 	snprintf(cpu, BUF_SIZE, "%s (%d) @ %.*f%s", cpu_model, num_cores, prec, freq, freq_unit);
 	free(cpu_model);
 
@@ -380,7 +380,7 @@ static char *get_cpu(void *arg) {
 static char *get_gpu(void *arg) {
 	// inspired by https://github.com/pciutils/pciutils/edit/master/example.c
 	/* it seems that pci_lookup_name needs to be given a buffer, but I can't for the life of my figure out what its for */
-	char buffer[BUF_SIZE], *device_class, *gpu = malloc(BUF_SIZE);
+	char buffer[BUF_SIZE], *device_class, *gpu = safe_malloc(BUF_SIZE);
 	struct pci_access *pacc;
 	struct pci_dev *dev;
 	intptr_t index = (intptr_t)arg;
@@ -462,7 +462,7 @@ static char *get_memory(void *arg) {
 	total_memory = total / 1024;
 	int percentage = (int)(100 * (used_memory / (double)total_memory));
 
-	char *memory = malloc(BUF_SIZE);
+	char *memory = safe_malloc(BUF_SIZE);
 	snprintf(memory, BUF_SIZE, "%dMiB / %dMiB (%d%%)", used_memory, total_memory, percentage);
 
 	return memory;
@@ -470,7 +470,7 @@ static char *get_memory(void *arg) {
 
 static char *get_disk_usage(void *arg) {
 	char *folder = arg;
-	char *disk_usage = malloc(BUF_SIZE);
+	char *disk_usage = safe_malloc(BUF_SIZE);
 	long total, used, free;
 	int percentage;
 	status = statvfs(folder, &file_stats);
@@ -487,7 +487,7 @@ static char *get_disk_usage(void *arg) {
 
 static char *get_colors1(void *arg) {
 	(void) arg;
-	char *colors1 = malloc(BUF_SIZE);
+	char *colors1 = safe_malloc(BUF_SIZE);
 	char *s = colors1;
 
 	for (int i = 0; i < 8; i++) {
@@ -501,7 +501,7 @@ static char *get_colors1(void *arg) {
 
 static char *get_colors2(void *arg) {
 	(void) arg;
-	char *colors2 = malloc(BUF_SIZE);
+	char *colors2 = safe_malloc(BUF_SIZE);
 	char *s = colors2;
 
 	for (int i = 8; i < 16; i++) {
@@ -516,4 +516,10 @@ static char *get_colors2(void *arg) {
 static char *spacer(void *arg) {
 	(void) arg;
 	return calloc(1, 1); // freeable, null-terminated string of length 1
+}
+
+static char *run_shell_cmd(void *arg) {
+	char *cmd = arg;
+	char *retval = strdup(cmd);
+	return retval;
 }

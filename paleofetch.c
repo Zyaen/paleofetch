@@ -49,90 +49,12 @@ struct utsname uname_info;
 struct sysinfo my_sysinfo;
 int title_length, status;
 
-/*
- * Replaces the first newline character with null terminator
- */
-void remove_newline(char *s) {
-	while (*s != '\0' && *s != '\n')
-		s++;
-	*s = '\0';
-}
-
-/*
- * Replaces the first newline character with null terminator
- * and returns the length of the string
- */
-int remove_newline_get_length(char *s) {
-	int i;
-	for (i = 0; *s != '\0' && *s != '\n'; s++, i++)
-		;
-	*s = '\0';
-	return i;
-}
-
-/*
- * Cleans up repeated spaces in a string
- * Trim spaces at the front of a string
- */
-void truncate_spaces(char *str) {
-	int src = 0, dst = 0;
-	while (*(str + dst) == ' ')
-		dst++;
-
-	while (*(str + dst) != '\0') {
-		*(str + src) = *(str + dst);
-		if (*(str + (dst++)) == ' ')
-			while (*(str + dst) == ' ')
-				dst++;
-
-		src++;
-	}
-
-	*(str + src) = '\0';
-}
-
-/*
- * Removes the first len characters of substring from str
- * Assumes that strlen(substring) >= len
- * Returns index where substring was found, or -1 if substring isn't found
- */
-void remove_substring(char *str, const char *substring, size_t len) {
-	/* shift over the rest of the string to remove substring */
-	char *sub = strstr(str, substring);
-	if (sub == NULL)
-		return;
-
-	int i = 0;
-	do
-		*(sub + i) = *(sub + i + len);
-	while (*(sub + (++i)) != '\0');
-}
-
-/*
- * Replaces the first sub_len characters of sub_str from str
- * with the first repl_len characters of repl_str
- */
-void replace_substring(char *str, const char *sub_str, const char *repl_str, size_t sub_len, size_t repl_len) {
-	char buffer[BUF_SIZE / 2];
-	char *start = strstr(str, sub_str);
-	if (start == NULL)
-		return; // substring not found
-
-	/* check if we have enough space for new substring */
-	if (strlen(str) - sub_len + repl_len >= BUF_SIZE / 2) {
-		status = -1;
-		halt_and_catch_fire("new substring too long to replace");
-	}
-
-	strcpy(buffer, start + sub_len);
-	strncpy(start, repl_str, repl_len);
-	strcpy(start + repl_len, buffer);
-}
-
-#include "functions.c" //Some people might think that including a C function is evil, and to those people I say I don't want to rewrite the makefile and also who decided that anyway that's a load of hogwash because organization trumps blindly following a guideline
+ //Some people might think that including a C function is evil, and to those people I say I don't want to rewrite the makefile and also who decided that anyway that's a load of hogwash because organization trumps blindly following a guideline
+#include "helper.c"
+#include "functions.c"
 
 char *get_cache_file_name() {
-	char *cache_file = malloc(BUF_SIZE);
+	char *cache_file = safe_malloc(BUF_SIZE);
 #ifdef TEMP_CACHE_FILE
 	strcpy(cache_file, "/tmp/paleofetch-cache-file");
 	return cache_file;
@@ -165,7 +87,7 @@ char *search_cache(char *cache_data, char *label) {
 	return buf;
 }
 
-char *get_value(struct conf c, int read_cache, char *cache_data) {
+char *get_value(struct conf c, int read_cache, char *cache_data, FILE *cache_file) {
 	char *value;
 
 	// If the user's config specifies that this value should be cached
@@ -174,14 +96,11 @@ char *get_value(struct conf c, int read_cache, char *cache_data) {
 	else {
 		// Otherwise, call the associated function to get the value
 		value = c.function(c.args);
-		if (c.cached) { // and append it to our cache data if appropriate
-			char *buf = malloc(BUF_SIZE);
-			sprintf(buf, "%s=%s%c", c.label, value, CACHE_SEPERATOR);
-			strcat(cache_data, buf);
-			free(buf);
+		if (c.cached) { // and append it to our cache file if appropriate
+			fprintf(cache_file, "%s=%s%c", c.label, value, CACHE_SEPERATOR);
 		}
 	}
-
+//	fprintf(stderr, "%s\n", value);
 	return value;
 }
 
@@ -196,8 +115,9 @@ int main(int argc, char *argv[]) {
 	halt_and_catch_fire("sysinfo failed");
 	display = XOpenDisplay(NULL);
 
-	if (argc == 2 && strcmp(argv[1], "--recache") == 0)
-		if (!strcmp(argv[1], "-r") || !strcmp(argv[1], "--recache"))
+	/* Had to rewrite this entire thing due to it being too convoluted */
+	if (argc == 2)
+		if ((!strcmp(argv[1], "-r")) || (!strcmp(argv[1], "--recache")))
 			read_cache = 0;
 
 	cache = get_cache_file_name();
@@ -206,45 +126,53 @@ int main(int argc, char *argv[]) {
 		read_cache = cache_file != NULL;
 	}
 
-	if (!read_cache)
-		cache_data = calloc(4, BUF_SIZE * 4); // this is a monumentally stupid way to do this
-	else {
+	//read_cache is updated so check it again
+	if (read_cache) {
 		size_t len; /* unused */
 		getdelim(&cache_data, &len, 0, cache_file);
 		fclose(cache_file); // We just need the first (and only) line.
+	} else {
+		//if not read_cache, we print directly to cache_file, as opposed to storing a giant string and appending data to it
+		cache_file = fopen(cache, "w");
 	}
 
-	int offset = 0;
 
-	for (int i = 0; i < COUNT(LOGO); i++) {
-		// If we've run out of information to show...
-		if (i >= COUNT(config) - offset) // just print the next line of the logo
-			printf(COLOR "%s\n", LOGO[i]);
-		else {
-			// Otherwise, we've got a bit of work to do.
-			char *label = config[i + offset].label, *value = get_value(config[i + offset], read_cache, cache_data);
-			if (strcmp(value, "") != 0) {                           // check if value is an empty string
-				printf(COLOR "%s%s\e[0m%s\n", LOGO[i], label, value); // just print if not empty
-			} else {
-				if (strcmp(label, "") != 0) {       // check if label is empty, otherwise it's a spacer
-					++offset;                         // print next line of information
-					free(value);                      // free memory allocated for empty value
-					label = config[i + offset].label; // read new label and value
-					value = get_value(config[i + offset], read_cache, cache_data);
-				}
-				printf(COLOR "%s%s\e[0m%s\n", LOGO[i], label, value);
-			}
+	/* Had to rewrite this entire thing due to it being GARBAGE */
+	int offset = 0, i = 0;
+	// Offset increments because we always go through one line of commands, but we don't always print anything
+	for (; i < COUNT(LOGO) && i + offset < COUNT(config);) {
+		// Evaluate a command[i+offset]. If we should print it, print it and the logo line i
+		char *label = config[i + offset].label;
+		char *value = get_value(config[i + offset], read_cache, cache_data, cache_file);
+		if (!strcmp(value, "") && strcmp(label, "")) {             // If value is empty and label is not, then it is skipped
 			free(value);
+			offset++;
+			continue;
 		}
+		printf(COLOR "%s%s\e[0m%s\n", LOGO[i], label, value);
+		free(value);
+		i++;
+	}
+	//only one of the two following for loops is possible
+	//LOGO is bigger than commands
+	for (; i < COUNT(LOGO); i++)
+		printf(COLOR "%s\n", LOGO[i]);
+	//Commands are bigger than LOGO
+	int spacer_size = strlen(LOGO[i-1]);
+	for (; i + offset < COUNT(config); offset++) {
+		//print spaces the length of the last line of the logo
+		for (int j = 0; j < spacer_size; j++)
+			fputc(' ', stdout);
+		char *label = config[i + offset].label;
+		char *value = get_value(config[i + offset], read_cache, cache_data, cache_file);
+		printf(COLOR "%s\e[0m%s\n", label, value);
+		free(value);
 	}
 	puts("\e[0m");
 
 	/* Write out our cache data (if we have any). */
-	if (!read_cache && *cache_data) {
-		cache_file = fopen(cache, "w");
-		fprintf(cache_file, "%s", cache_data);
+	if (!read_cache)
 		fclose(cache_file);
-	}
 
 	free(cache);
 	free(cache_data);
