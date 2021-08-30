@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
 			offset++;
 			continue;
 		}
-		printf(COLOR "%s%s\e[0m%s\n", LOGO[i], label, value);
+		printf(COLOR "%s"COLOR"%s\e[0m%s\n", LOGO[i], label, value);
 		free(value);
 		i++;
 	}
