@@ -7,7 +7,10 @@ static char *get_title(void *arg) {
 
 	char username[BUF_SIZE / 3];
 	status = getlogin_r(username, BUF_SIZE / 3);
-	halt_and_catch_fire("unable to retrieve login name");
+	if (getlogin_r(username, BUF_SIZE / 3) != 0) {
+      FILE *proc = popen("echo ${USER:-$(id -un || printf %s \"${HOME/*\/}\")}", "r");
+      fscanf(proc, "%s", &username);
+    }
 
 	title_length = strlen(hostname) + strlen(username) + 1;
 
