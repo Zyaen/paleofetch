@@ -181,7 +181,7 @@ static char *get_packages(const char *dirname, const char *pacname, int num_extr
 	return packages;
 }
 
-static char *get_packages_pacman(void *arg) { (void)arg; return get_packages("/var/lib/pacman/local", "pacman", 0); }
+static char *get_packages_pacman(void *arg) { (void)arg; return get_packages(PACMAN"/var/lib/pacman/local", "pacman", 0); }
 
 static char *get_shell(void *arg) {
 	(void)arg;

@@ -1,5 +1,7 @@
 #include "logos/arch_big.h"
 #define COLOR "\e[1;36m"
+/*for junest or bedrock linux*/
+#define PACMAN ""
 
 #define TEMP_CACHE_FILE 1
 
